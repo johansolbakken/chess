@@ -199,6 +199,7 @@ bool FENParser::parse_castle(Board& board, const std::string& castle) {
 
 bool FENParser::parse_en_passant(Board& board, const std::string& en_passant) {
     if (en_passant[0] == '-') {
+        board.has_en_passant = false;
         return false;
     }
 
@@ -212,8 +213,9 @@ bool FENParser::parse_en_passant(Board& board, const std::string& en_passant) {
         return true;
     }
 
-    board.en_passant_file = static_cast<uint8_t>(en_passant[0] - 'a');
-    board.en_passant_rank = static_cast<uint8_t>(en_passant[1] - '1');
+    board.en_passant_file = static_cast<uint8_t>(static_cast<int>(en_passant[0]) - 'a');
+    board.en_passant_rank = static_cast<uint8_t>(static_cast<int>(en_passant[1]) - '1');
+    board.has_en_passant = true;
 
     return false;
 }
@@ -234,4 +236,143 @@ bool FENParser::parse_move_count(Board& board, const std::string& half_move, con
     }
 
     return false;
+}
+
+std::string FENParser::to_fen(const Board& board) {
+    std::stringstream ss;
+
+    write_board(ss, board);
+    ss << ' ';
+    write_turn(ss, board);
+    ss << ' ';
+    write_castle(ss, board);
+    ss << ' ';
+    write_en_passant(ss, board);
+    ss << ' ';
+    write_move_count(ss, board);
+    ss << '\n';
+
+    return ss.str();
+}
+
+void FENParser::write_board(std::stringstream& ss, const Board& board) {
+    for (int rank = 7; rank >= 0; rank--) {
+        size_t empty_count = 0;
+        for (size_t file = 0; file < 8; file++) {
+            bool is_empty = static_cast<PieceType>(board.pieces[rank*8 + file].type) == PieceType::None;
+
+            if (is_empty) {
+                empty_count++;
+                continue;
+            }
+
+            // not empty
+            if (empty_count > 0) {
+                ss << empty_count;
+                empty_count = 0;
+            }
+
+            PieceType type = static_cast<PieceType>(board.pieces[rank*8 + file].type);
+            Color color = static_cast<Color>(board.pieces[rank*8 + file].color);
+            switch (type) {
+            case PieceType::Rook:
+              if (color == Color::White) {
+                ss << 'R';
+              } else {
+                ss << 'r';
+              }
+              break;
+            case PieceType::Queen:
+              if (color == Color::White) {
+                ss << 'Q';
+              } else {
+                ss << 'q';
+              }
+              break;
+            case PieceType::King:
+              if (color == Color::White) {
+                ss << 'K';
+              } else {
+                ss << 'k';
+              }
+              break;
+            case PieceType::Bishop:
+              if (color == Color::White) {
+                ss << 'B';
+              } else {
+                ss << 'b';
+              }
+              break;
+            case PieceType::Knight:
+              if (color == Color::White) {
+                ss << 'N';
+              } else {
+                ss << 'n';
+              }
+              break;
+            case PieceType::Pawn:
+              if (color == Color::White) {
+                ss << 'P';
+              } else {
+                ss << 'p';
+              }
+              break;
+            default:
+                break;
+            }
+        }
+
+        if (empty_count > 0) {
+          ss << empty_count;
+        }
+
+        if (rank > 0) {
+            ss << '/';
+        }
+    }
+}
+
+void FENParser::write_turn(std::stringstream& ss, const Board& board) {
+    if (static_cast<Color>(board.turn) == Color::White) {
+        ss << 'w';
+    } else {
+        ss << 'b';
+    }
+}
+
+
+void FENParser::write_castle(std::stringstream& ss, const Board& board) {
+    if (board.castle_white_kingside) {
+        ss << 'K';
+    }
+    if (board.castle_white_queenside) {
+        ss << 'Q';
+    }
+    if (board.castle_black_kingside) {
+        ss << 'k';
+    }
+    if (board.castle_black_queenside) {
+        ss << 'q';
+    }
+    if ((board.castle_black_kingside
+         | board.castle_black_queenside
+         | board.castle_white_kingside
+         | board.castle_white_queenside) == 0) {
+        ss << '-';
+    }
+}
+
+
+void FENParser::write_en_passant(std::stringstream& ss, const Board& board) {
+    if (!board.has_en_passant) {
+        ss << '-';
+        return;
+    }
+
+    ss << static_cast<char>(board.en_passant_file + 'a');
+    ss << static_cast<char>(board.en_passant_rank + '1');
+}
+
+void FENParser::write_move_count(std::stringstream &ss, const Board &board) {
+  ss << static_cast<int>(board.half_move) << ' ' << static_cast<int>(board.full_move);
 }

@@ -33,6 +33,7 @@ struct Board {
   uint8_t castle_black_kingside : 1;
   uint8_t castle_black_queenside : 1;
 
+  uint8_t has_en_passant : 1;
   uint8_t en_passant_file : 3;
   uint8_t en_passant_rank : 3;
 

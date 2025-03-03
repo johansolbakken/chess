@@ -1,6 +1,8 @@
 #include "fen.h"
 #include "util.h"
 
+#include <fstream>
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         std::println("Usage: {} file_path.fen", argv[0]);
@@ -9,7 +11,10 @@ int main(int argc, char *argv[]) {
 
     FENParser parser;
     Board board = parser.parse_fen(read_file(argv[1]));
-    std::println("Board: {}", sizeof(Board));
+
+
+    std::ofstream file("output.fen");
+    file << parser.to_fen(board);
 
     return 0;
 }
