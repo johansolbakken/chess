@@ -29,8 +29,8 @@ struct Piece {
   uint8_t _type : 3;
   uint8_t _color : 1;
 
-  Color color() const { return static_cast<Color>(_color); }
-  PieceType type() const { return static_cast<PieceType>(_type); }
+  inline constexpr Color color() const { return static_cast<Color>(_color); }
+  inline constexpr PieceType type() const { return static_cast<PieceType>(_type); }
 };
 
 struct Square {
@@ -69,15 +69,15 @@ struct Board {
   uint8_t half_move : 8 = 0;
   uint8_t full_move : 8 = 1;
 
-  const Piece& at(const Square& sq) const {
+  inline constexpr const Piece& at(const Square& sq) const {
     return pieces[sq.rank*8+sq.file];
   }
 
-  Piece& at(const Square& sq) {
+  inline constexpr Piece& at(const Square& sq) {
     return pieces[sq.rank*8+sq.file];
   }
 
-  bool is_empty(const Square& sq) const {
+  inline bool is_empty(const Square& sq) const {
     return at(sq).type()== PieceType::None;
   }
 };
