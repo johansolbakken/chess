@@ -4,6 +4,7 @@
 #include <print>
 #include <vector>
 
+#include "board.h"
 #include "util.h"
 #include "horse.h"
 
@@ -100,7 +101,7 @@ double Engine::evaluate(const Board &board) {
   double score = 0.0;
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
-      const auto& p = board.at(rank, file);
+      const auto& p = board.pieces[rank*8 + file];
 
       if (p.type() == PieceType::None) {
         continue;
@@ -137,24 +138,11 @@ double Engine::evaluate(const Board &board) {
   return score;
 }
 
-bool Engine::legal_move(const Board &board, const Square &from,
-                        const Square &to) {
-  if (board.is_empty(to.rank, to.file)) {
-    return true;
-  }
-
-  if (board.at(from.rank, from.file)._color == board.at(to.rank, to.file)._color) {
-    return false;
-  }
-
-  return true;
-}
-
 void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
       Square from = {rank, file};
-      const Piece &p = board.at(from.rank, from.file);
+      const Piece &p = board.pieces[from.rank * 8 + from.file];
 
       if (p.type() == PieceType::None) {
         continue;
@@ -192,7 +180,7 @@ void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
 
 void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
                                 const Square &from) {
-  const auto &p = board.at(from.rank, from.file);
+  const auto &p = board.pieces[from.rank * 8 + from.file];
   int8_t dy = p.color() == Color::White ? 1 : -1;
   bool start_square = (p.color() == Color::White) && (from.rank == 1) ||
                       (p.color() == Color::Black) && (from.rank == 6);
@@ -200,9 +188,10 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
   // Propose attacking moves
   {
     // Attack right
-    if (util::within_bounds(from.rank + dy, from.file + 1)){
+    if (util::within_bounds(from.rank + dy, from.file + 1)) {
       Square move = {from.rank + dy, from.file + 1};
-      if (!board.is_empty(move.rank, move.file) && (board.at(move.rank, move.file)._color != p._color)) {
+      if (board.pieces[move.rank * 8 + move.file].type() != PieceType::None &&
+          (board.pieces[move.rank * 8 + move.file]._color != p._color)) {
         moves.push_back({from, move});
       }
     }
@@ -210,7 +199,8 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
     // Attack left
     if (util::within_bounds(from.rank + dy, from.file - 1)) {
       Square move = {from.rank + dy, from.file - 1};
-      if (!board.is_empty(move.rank, move.file) && (board.at(move.rank, move.file)._color != p._color)) {
+      if (board.pieces[move.rank * 8 + move.file].type() != PieceType::None &&
+          (board.pieces[move.rank * 8 + move.file]._color != p._color)) {
         moves.push_back({from, move});
       }
     }
@@ -219,14 +209,14 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
   // Propose moving moves
   if (start_square) {
     Square move = {from.rank + 2 * dy, from.file};
-    if (board.is_empty(from.rank + dy, from.file) && board.is_empty(move.rank, move.file)) {
+    if (board.pieces[(from.rank + dy) * 8 + from.file].type() == PieceType::None && board.pieces[move.rank*8 + move.file].type() == PieceType::None) {
       moves.push_back({from, move});
     }
   }
 
   {
     Square move = {from.rank + dy, from.file};
-    if (board.is_empty(move.rank, move.file)) {
+    if (board.pieces[move.rank*8 +move.file].type() == PieceType::None) {
       moves.push_back({from, move});
     }
   }
@@ -250,15 +240,16 @@ void Engine::propose_king_moves(const Board &board, std::vector<Move> &moves,
       int rank = from.rank + dy;
       int file = from.file + dx;
 
-      if (rank < 0 || rank > 7 || file < 0 || file > 7) {
+      if (!util::within_bounds(rank, file)) {
         continue;
       }
 
-      Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
-
-      if (legal_move(board, from, move)) {
-        moves.push_back({from, move});
+      Square move = {rank, file};
+      if (board.pieces[move.rank * 8 + move.file].type() != PieceType::None && board.pieces[move.rank * 8 + move.file]._color == board.turn) {
+        continue;
       }
+
+      moves.push_back({from, move});
     }
   }
 }
@@ -275,20 +266,16 @@ void Engine::propose_rook_moves(const Board &board, std::vector<Move> &moves,
     }
 
     Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
-    if (!board.is_empty(move.rank, move.file)) {
-      if (board.at(move.rank, move.file)._color != board.turn) {
-        if (legal_move(board, from, move)) {
-          moves.push_back({from, move});
-        }
+    if (board.pieces[move.rank*8+ move.file].type() != PieceType::None) {
+      if (board.pieces[move.rank*8+ move.file]._color != board.turn) {
+        moves.push_back({from, move});
       }
 
       // square was not empty, return true
       return true;
     }
 
-    if (legal_move(board, from, move)) {
-      moves.push_back({from, move});
-    }
+    moves.push_back({from, move});
 
     return false;
   };
@@ -341,20 +328,16 @@ void Engine::propose_bishop_moves(const Board &board, std::vector<Move> &moves,
     }
 
     Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
-    if (!board.is_empty(move.rank, move.file)) {
-      if (board.at(move.rank, move.file)._color != board.turn) {
-        if (legal_move(board, from, move)) {
+    if (board.pieces[move.rank*8+ move.file].type() != PieceType::None) {
+      if (board.pieces[move.rank*8+ move.file]._color != board.turn) {
           moves.push_back({from, move});
-        }
       }
 
       // square was not empty, return true
       return true;
     }
 
-    if (legal_move(board, from, move)) {
-      moves.push_back({from, move});
-    }
+    moves.push_back({from, move});
 
     return false;
   };
@@ -402,56 +385,37 @@ void Engine::propose_queen_moves(const Board &board, std::vector<Move> &moves,
   propose_rook_moves(board, moves, from);
 }
 
-size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
-                                    const Color &color) {
-  size_t count = 0;
+size_t Engine::count_pawn_attacking(const Board &board, const Square &square, Color color) {
+    size_t count = 0;
+    int direction = (color == Color::White) ? +1 : -1;
 
-  if (color == Color::White) {
-    int o_rank = square.rank + 1;
-    int o_file = square.file + 1;
+    // Potential attack rank
+    int attackRank = static_cast<int>(square.rank) + direction;
 
-    if (util::within_bounds(o_rank, o_file)) {
-      Square move = {o_rank, o_file};
-      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
-        count++;
-      }
+    // Check if the new rank is on the board
+    if (attackRank >= 0 && attackRank < 8) {
+        // Check the two possible files for pawn attacks: file - 1 and file + 1
+        for (int fileOffset : {-1, +1}) {
+            int attackFile = static_cast<int>(square.file) + fileOffset;
+            if (attackFile >= 0 && attackFile < 8) {
+                // Direct indexing to avoid repeated calls to board.at() / is_empty()
+                const Piece occupant = board.pieces[attackRank * 8 + attackFile];
+                if (occupant.type() != PieceType::None && occupant.color() != color) {
+                    count++;
+                }
+            }
+        }
     }
 
-    o_file = square.file - 1;
-    if (util::within_bounds(o_rank, o_file)) {
-      Square move = {o_rank, o_file};
-      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
-        count++;
-      }
-    }
-  } else {
-    int o_rank = square.rank - 1;
-    int o_file = square.file + 1;
-
-    if (util::within_bounds(o_rank, o_file)) {
-      Square move = {o_rank, o_file};
-      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
-        count++;
-      }
-    }
-
-    o_file = square.file - 1;
-    if (util::within_bounds(o_rank, o_file)) {
-      Square move = {o_rank, o_file};
-      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
-        count++;
-      }
-    }
-  }
-
-  return count;
+    return count;
 }
+
 
 size_t Engine::count_knight_attacking(const Board& board, const Square& square, Color color) {
   size_t count = 0;
 
   for (const auto& [rank, file] : KnightMoveTable::get(square.rank, square.file)) {
-    const auto& p = board.at(rank, file);
+    const auto& p = board.pieces[rank*8+file];
     if (p.type() != PieceType::None && p.color() != color) {
       count++;
     }
@@ -462,8 +426,8 @@ size_t Engine::count_knight_attacking(const Board& board, const Square& square, 
 
 Board Engine::make_move(const Board &board, const Move &move) {
   Board b = board;
-  b.at(move.to) = b.at(move.from);
-  b.at(move.from)._type = static_cast<uint8_t>(PieceType::None);
+  b.pieces[move.to.rank*8+move.to.file] = b.pieces[move.from.rank*8+move.from.file];
+  b.pieces[move.from.rank*8+move.from.file]._type = static_cast<uint8_t>(PieceType::None);
   b.turn = !b.turn;
   return b;
 }
