@@ -20,6 +20,7 @@ public:
     void generate_moves(const Board& board, std::vector<Move>& moves);
     void propose_pawn_moves(const Board& board, std::vector<Move>& moves, const Square& from);
     void propose_knight_moves(const Board& board, std::vector<Move>& moves, const Square& from);
+    void propose_king_moves(const Board& board, std::vector<Move>& moves, const Square& from);
 
     Board make_move(const Board& board, const Move& move);
 };

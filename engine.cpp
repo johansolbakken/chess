@@ -201,6 +201,30 @@ void Engine::propose_knight_moves(const Board &board, std::vector<Move> &moves,
   }
 }
 
+void Engine::propose_king_moves(const Board &board, std::vector<Move> &moves,
+                                const Square &from) {
+  for (int dy = -1; dy <= 1; dy++) {
+    for (int dx = -1; dx <= 1; dx++) {
+      if (dy == 0 && dx == 0) {
+        continue;
+      }
+
+      int rank = from.rank + dy;
+      int file = from.file + dx;
+
+      if (rank < 0 || rank > 7 || file < 0 || file > 7) {
+        continue;
+      }
+
+      Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
+
+      if (legal_move(board, from, move)) {
+        moves.push_back({from, move});
+      }
+    }
+  }
+}
+
 Board Engine::make_move(const Board& board, const Move& move) {
   Board b = board;
   b.at(move.to) = b.at(move.from);
