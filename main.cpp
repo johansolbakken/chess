@@ -2,8 +2,6 @@
 #include "util.h"
 #include "engine.h"
 
-// #include <fstream>
-
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         std::println("Usage: {} file_path.fen", argv[0]);
@@ -13,13 +11,9 @@ int main(int argc, char *argv[]) {
     FENParser parser;
     Board board = parser.parse_fen(read_file(argv[1]));
 
-
-
-    //std::ofstream file("output.fen");
-    //file << parser.to_fen(board);
-
     Engine engine;
-    std::println("Best move: {}", engine.best_move(board));
+    Engine::Move move = engine.best_move(board, 2);
+    std::println("Best move: {} -> {}", to_string(move.from), to_string(move.to));
 
     return 0;
 }
