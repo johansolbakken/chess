@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 
     Engine engine;
     for (int i = 0; i < 10; i++) {
-      Engine::Move move = engine.best_move(board, 2);
+      Engine::Move move = engine.best_move(board, 4);
       std::println("Best move: {} -> {}", to_string(move.from),
                    to_string(move.to));
       board = engine.make_move(board, move);
