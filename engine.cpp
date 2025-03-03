@@ -13,7 +13,7 @@ Engine::Move Engine::best_move(const Board &board, int depth) {
   generate_moves(board, moves);
 
   for (const auto& m : moves) {
-      Board b = make_move(board, m.from, m.to);
+      Board b = make_move(board, m);
 
       double score = minimax(b, depth, static_cast<Color>(board.turn) == Color::White);
       if (score > best_score) {
@@ -43,7 +43,7 @@ double Engine::minimax(const Board& board, int depth, bool white) {
     double best_score = -std::numeric_limits<double>::infinity();
 
     for (const auto &m : moves) {
-      Board b = make_move(board, m.from, m.to);
+      Board b = make_move(board, m);
       double score = minimax(b, depth-1, false);
       best_score = std::max(best_score, score);
     }
@@ -53,7 +53,7 @@ double Engine::minimax(const Board& board, int depth, bool white) {
     double best_score = std::numeric_limits<double>::infinity();
 
     for (const auto &m : moves) {
-      Board b = make_move(board, m.from, m.to);
+      Board b = make_move(board, m);
       double score = minimax(b, depth-1, true);
       best_score = std::min(best_score, score);
     }
@@ -201,9 +201,10 @@ void Engine::propose_knight_moves(const Board &board, std::vector<Move> &moves,
   }
 }
 
-Board Engine::make_move(const Board& board, const Square& from, const Square& to) {
+Board Engine::make_move(const Board& board, const Move& move) {
   Board b = board;
-  b.at(to) = b.at(from);
-  b.at(from).type = static_cast<uint8_t>(PieceType::None);
+  b.at(move.to) = b.at(move.from);
+  b.at(move.from).type = static_cast<uint8_t>(PieceType::None);
+  b.turn = !b.turn;
   return b;
 }
