@@ -4,4 +4,4 @@ project(chess)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(chess main.cpp fen.cpp)
+add_executable(chess main.cpp fen.cpp engine.cpp)

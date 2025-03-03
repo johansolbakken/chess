@@ -1,7 +1,8 @@
 #include "fen.h"
 #include "util.h"
+#include "engine.h"
 
-#include <fstream>
+// #include <fstream>
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -13,8 +14,12 @@ int main(int argc, char *argv[]) {
     Board board = parser.parse_fen(read_file(argv[1]));
 
 
-    std::ofstream file("output.fen");
-    file << parser.to_fen(board);
+
+    //std::ofstream file("output.fen");
+    //file << parser.to_fen(board);
+
+    Engine engine;
+    std::println("Best move: {}", engine.best_move(board));
 
     return 0;
 }
