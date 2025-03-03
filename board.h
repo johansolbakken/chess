@@ -4,13 +4,14 @@
 #include <cstdint>
 #include <string>
 #include <format>
+#include <cassert>
 
-enum class Color {
+enum class Color : uint8_t {
   White=0,
   Black=1
 };
 
-enum class PieceType {
+enum class PieceType : uint8_t {
   None=0,
   King=1,
   Queen=2,
@@ -20,22 +21,36 @@ enum class PieceType {
   Pawn=6
 };
 
+inline int compare(PieceType a, PieceType b) {
+  return static_cast<int>(a) - static_cast<int>(b);
+}
+
 struct Piece {
-  uint8_t type : 3;
-  uint8_t color : 1;
+  uint8_t _type : 3;
+  uint8_t _color : 1;
+
+  Color color() const { return static_cast<Color>(_color); }
+  PieceType type() const { return static_cast<PieceType>(_type); }
 };
 
 struct Square {
   uint8_t rank : 3;
   uint8_t file : 3;
+
+  Square() = default;
+
+  template <std::integral T, std::integral U>
+  Square(T r, U f)
+      : rank(static_cast<uint8_t>(r)), file(static_cast<uint8_t>(f)) {
+    assert(util::within_bounds(r, f) && "Square coordinates must be between 0 and 7");
+  }
 };
 
-inline std::string to_string(const Square& square) {
+inline std::string to_string(const Square &square) {
   return std::format("{}{}",
     static_cast<char>(square.file + 'a'),
     static_cast<char>(square.rank + '1'));
 }
-
 
 struct Board {
   std::array<Piece,64> pieces = {};
@@ -63,6 +78,6 @@ struct Board {
   }
 
   bool is_empty(const Square& sq) const {
-    return static_cast<PieceType>(at(sq).type) == PieceType::None;
+    return at(sq).type()== PieceType::None;
   }
 };

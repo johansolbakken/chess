@@ -88,53 +88,53 @@ bool FENParser::parse_board(Board& board, const std::string& board_desc) {
         for (int i = 0; i < rank_line.size(); i++) {
             switch (rank_line[i]) {
                 case 'r':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Rook);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Rook);
                     break;
                 case 'n':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Knight);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Knight);
                     break;
                 case 'b':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Bishop);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Bishop);
                     break;
                 case 'q':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Queen);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Queen);
                     break;
                 case 'k':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::King);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::King);
                     break;
                 case 'p':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Pawn);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Pawn);
                     break;
 
                 case 'R':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Rook);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Rook);
                     break;
                 case 'N':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Knight);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Knight);
                     break;
                 case 'B':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Bishop);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Bishop);
                     break;
                 case 'Q':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Queen);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Queen);
                     break;
                 case 'K':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::King);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::King);
                     break;
                 case 'P':
-                    board.pieces[rank * 8 + file].color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file].type = static_cast<uint8_t>(PieceType::Pawn);
+                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
+                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Pawn);
                     break;
 
                 default:
@@ -259,7 +259,7 @@ void FENParser::write_board(std::stringstream& ss, const Board& board) {
     for (int rank = 7; rank >= 0; rank--) {
         size_t empty_count = 0;
         for (size_t file = 0; file < 8; file++) {
-            bool is_empty = static_cast<PieceType>(board.pieces[rank*8 + file].type) == PieceType::None;
+            bool is_empty = board.pieces[rank*8 + file].type() == PieceType::None;
 
             if (is_empty) {
                 empty_count++;
@@ -272,8 +272,8 @@ void FENParser::write_board(std::stringstream& ss, const Board& board) {
                 empty_count = 0;
             }
 
-            PieceType type = static_cast<PieceType>(board.pieces[rank*8 + file].type);
-            Color color = static_cast<Color>(board.pieces[rank*8 + file].color);
+            PieceType type = board.pieces[rank*8 + file].type();
+            Color color = board.pieces[rank*8 + file].color();
             switch (type) {
             case PieceType::Rook:
               if (color == Color::White) {

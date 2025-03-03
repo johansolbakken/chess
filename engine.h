@@ -16,7 +16,6 @@ public:
     double evaluate(const Board& board);
 
     bool legal_move(const Board& board, const Square& from, const Square& to);
-    bool within_bounds(int rank, int file);
 
     void generate_moves(const Board& board, std::vector<Move>& moves);
     void propose_pawn_moves(const Board& board, std::vector<Move>& moves, const Square& from);
@@ -25,6 +24,9 @@ public:
     void propose_rook_moves(const Board& board, std::vector<Move>& moves, const Square& from);
     void propose_bishop_moves(const Board& board, std::vector<Move>& moves, const Square& from);
     void propose_queen_moves(const Board& board, std::vector<Move>& moves, const Square& from);
+
+    size_t count_pawn_attacking(const Board& board, const Square& square, const Color& color);
+    size_t count_knight_attacking(const Board& board, const Square& square, Color color);
 
     Board make_move(const Board& board, const Move& move);
 };

@@ -9,11 +9,11 @@ int main(int argc, char *argv[]) {
     }
 
     FENParser parser;
-    Board board = parser.parse_fen(read_file(argv[1]));
+    Board board = parser.parse_fen(util::read_file(argv[1]));
 
     Engine engine;
     for (int i = 0; i < 10; i++) {
-      Engine::Move move = engine.best_move(board, 4);
+      Engine::Move move = engine.best_move(board, 5);
       std::println("Best move: {} -> {}", to_string(move.from),
                    to_string(move.to));
       board = engine.make_move(board, move);
