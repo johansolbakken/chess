@@ -3,7 +3,6 @@
 #include <limits>
 #include <print>
 #include <vector>
-#include <map>
 
 #include "util.h"
 
@@ -12,6 +11,7 @@ Engine::Move Engine::best_move(const Board &board, int depth) {
   double best_score = -std::numeric_limits<double>::infinity();
 
   std::vector<Move> moves;
+  moves.reserve(20);
   generate_moves(board, moves);
 
   for (const auto& m : moves) {
@@ -35,6 +35,7 @@ double Engine::minimax(const Board& board, int depth, bool white) {
   }
 
   std::vector<Move> moves;
+  moves.reserve(20);
   generate_moves(board, moves);
 
   if (moves.empty()) {
@@ -66,22 +67,23 @@ double Engine::minimax(const Board& board, int depth, bool white) {
 }
 
 double Engine::evaluate(const Board &board) {
-  static const std::map<PieceType, double> base_value = {
-      {PieceType::King, 1000.0}, {PieceType::Queen, 9.0},
-      {PieceType::Rook, 5.0},    {PieceType::Bishop, 3.0},
-      {PieceType::Knight, 3.0},  {PieceType::Pawn, 1.0},
-  };
+  static constexpr std::array<double, 7> base_value = {/* None   */ 0.0,
+                                                       /* King   */ 1000.0,
+                                                       /* Queen  */ 9.0,
+                                                       /* Rook   */ 5.0,
+                                                       /* Bishop */ 3.0,
+                                                       /* Knight */ 3.0,
+                                                       /* Pawn   */ 1.0};
 
   static const double knight_table[8][8] = {
-    {-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0},
-    {-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0},
-    {-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0},
-    {-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0},
-    {-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0},
-    {-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0},
-    {-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0},
-    {-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0}
-  };
+      {-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0},
+      {-4.0, -2.0, 0.0, 0.5, 0.5, 0.0, -2.0, -4.0},
+      {-3.0, 0.5, 1.0, 1.5, 1.5, 1.0, 0.5, -3.0},
+      {-3.0, 0.0, 1.5, 2.0, 2.0, 1.5, 0.0, -3.0},
+      {-3.0, 0.5, 1.5, 2.0, 2.0, 1.5, 0.5, -3.0},
+      {-3.0, 0.0, 1.0, 1.5, 1.5, 1.0, 0.0, -3.0},
+      {-4.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, -4.0},
+      {-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0}};
 
   static const double pawn_table[8][8] = {
       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
@@ -97,17 +99,17 @@ double Engine::evaluate(const Board &board) {
   double score = 0.0;
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
-      if (board.is_empty({rank, file})) {
+      if (board.is_empty(rank, file)) {
         continue;
       }
 
-      double piece_value = base_value.at(board.at({rank, file}).type());
+      double piece_value = base_value[board.at(rank, file)._type];
 
-      switch (board.at({rank, file}).type()) {
+      switch (board.at(rank, file).type()) {
       case PieceType::Pawn:
         piece_value += count_pawn_attacking(board, {rank, file},
-                                            board.at({rank, file}).color());
-        if (board.at({rank, file}).color() == Color::White) {
+                                            board.at(rank, file).color());
+        if (board.at(rank, file).color() == Color::White) {
           piece_value += pawn_table[rank][file];
         } else {
           piece_value += pawn_table[7-rank][file];
@@ -116,14 +118,14 @@ double Engine::evaluate(const Board &board) {
       case PieceType::Knight:
         piece_value += knight_table[rank][file];
         piece_value += count_knight_attacking(board, {rank, file},
-                                              board.at({rank, file}).color());
+                                              board.at(rank, file).color());
         break;
       default:
         break;
       }
 
       // Subtract enemy pieces
-      if (board.at({rank, file})._color != board.turn) {
+      if (board.at(rank, file)._color != board.turn) {
         piece_value *= -1.0;
       }
 
@@ -136,11 +138,11 @@ double Engine::evaluate(const Board &board) {
 
 bool Engine::legal_move(const Board &board, const Square &from,
                         const Square &to) {
-  if (board.is_empty(to)) {
+  if (board.is_empty(to.rank, to.file)) {
     return true;
   }
 
-  if (board.at(from)._color == board.at(to)._color) {
+  if (board.at(from.rank, from.file)._color == board.at(to.rank, to.file)._color) {
     return false;
   }
 
@@ -151,7 +153,7 @@ void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
       Square from = {rank, file};
-      const Piece &p = board.at(from);
+      const Piece &p = board.at(from.rank, from.file);
 
       if (p.type() == PieceType::None) {
         continue;
@@ -189,7 +191,7 @@ void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
 
 void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
                                 const Square &from) {
-  const auto &p = board.at(from);
+  const auto &p = board.at(from.rank, from.file);
   int8_t dy = p.color() == Color::White ? 1 : -1;
   bool start_square = (p.color() == Color::White) && (from.rank == 1) ||
                       (p.color() == Color::Black) && (from.rank == 6);
@@ -199,7 +201,7 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
     // Attack right
     if (util::within_bounds(from.rank + dy, from.file + 1)){
       Square move = {from.rank + dy, from.file + 1};
-      if (!board.is_empty(move) && (board.at(move)._color != p._color)) {
+      if (!board.is_empty(move.rank, move.file) && (board.at(move.rank, move.file)._color != p._color)) {
         moves.push_back({from, move});
       }
     }
@@ -207,7 +209,7 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
     // Attack left
     if (util::within_bounds(from.rank + dy, from.file - 1)) {
       Square move = {from.rank + dy, from.file - 1};
-      if (!board.is_empty(move) && (board.at(move)._color != p._color)) {
+      if (!board.is_empty(move.rank, move.file) && (board.at(move.rank, move.file)._color != p._color)) {
         moves.push_back({from, move});
       }
     }
@@ -216,14 +218,14 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
   // Propose moving moves
   if (start_square) {
     Square move = {from.rank + 2 * dy, from.file};
-    if (board.is_empty({from.rank + dy, from.file}) && board.is_empty(move)) {
+    if (board.is_empty(from.rank + dy, from.file) && board.is_empty(move.rank, move.file)) {
       moves.push_back({from, move});
     }
   }
 
   {
     Square move = {from.rank + dy, from.file};
-    if (board.is_empty(move)) {
+    if (board.is_empty(move.rank, move.file)) {
       moves.push_back({from, move});
     }
   }
@@ -231,8 +233,10 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
 
 void Engine::propose_knight_moves(const Board &board, std::vector<Move> &moves,
                                   const Square &from) {
-  std::vector<std::pair<int, int>> Ls = {{2, 1},   {2, -1}, {1, -2}, {1, 2},
-                                         {-1, -2}, {-1, 2}, {-2, 1}, {-2, -1}};
+  static constexpr std::array<std::pair<int, int>, 8> Ls = {{
+      { 2,  1}, { 2, -1}, { 1, -2}, { 1,  2},
+      {-1, -2}, {-1,  2}, {-2,  1}, {-2, -1}
+  }};
 
   for (const auto &l : Ls) {
     int rank = from.rank + l.first;
@@ -286,8 +290,8 @@ void Engine::propose_rook_moves(const Board &board, std::vector<Move> &moves,
     }
 
     Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
-    if (!board.is_empty(move)) {
-      if (board.at(move)._color != board.turn) {
+    if (!board.is_empty(move.rank, move.file)) {
+      if (board.at(move.rank, move.file)._color != board.turn) {
         if (legal_move(board, from, move)) {
           moves.push_back({from, move});
         }
@@ -352,8 +356,8 @@ void Engine::propose_bishop_moves(const Board &board, std::vector<Move> &moves,
     }
 
     Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
-    if (!board.is_empty(move)) {
-      if (board.at(move)._color != board.turn) {
+    if (!board.is_empty(move.rank, move.file)) {
+      if (board.at(move.rank, move.file)._color != board.turn) {
         if (legal_move(board, from, move)) {
           moves.push_back({from, move});
         }
@@ -423,7 +427,7 @@ size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
 
     if (util::within_bounds(o_rank, o_file)) {
       Square move = {o_rank, o_file};
-      if (!board.is_empty(move) && board.at(move).color() != color) {
+      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
         count++;
       }
     }
@@ -431,7 +435,7 @@ size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
     o_file = square.file - 1;
     if (util::within_bounds(o_rank, o_file)) {
       Square move = {o_rank, o_file};
-      if (!board.is_empty(move) && board.at(move).color() != color) {
+      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
         count++;
       }
     }
@@ -441,7 +445,7 @@ size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
 
     if (util::within_bounds(o_rank, o_file)) {
       Square move = {o_rank, o_file};
-      if (!board.is_empty(move) && board.at(move).color() != color) {
+      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
         count++;
       }
     }
@@ -449,7 +453,7 @@ size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
     o_file = square.file - 1;
     if (util::within_bounds(o_rank, o_file)) {
       Square move = {o_rank, o_file};
-      if (!board.is_empty(move) && board.at(move).color() != color) {
+      if (!board.is_empty(move.rank, move.file) && board.at(move.rank, move.file).color() != color) {
         count++;
       }
     }
@@ -459,10 +463,12 @@ size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
 }
 
 size_t Engine::count_knight_attacking(const Board& board, const Square& square, Color color) {
-  size_t count = 0;
+  static constexpr std::array<std::pair<int, int>, 8> Ls = {{
+      { 2,  1}, { 2, -1}, { 1, -2}, { 1,  2},
+      {-1, -2}, {-1,  2}, {-2,  1}, {-2, -1}
+  }};
 
-  std::vector<std::pair<int, int>> Ls = {{2, 1},   {2, -1}, {1, -2}, {1, 2},
-                                         {-1, -2}, {-1, 2}, {-2, 1}, {-2, -1}};
+  size_t count = 0;
 
   for (const auto &l : Ls) {
     int rank = square.rank + l.first;
@@ -473,7 +479,8 @@ size_t Engine::count_knight_attacking(const Board& board, const Square& square, 
     }
 
     Square move = {rank, file};
-    if (!board.is_empty(move) && board.at(move).color() != color) {
+    const auto& p = board.at(move.rank, move.file);
+    if (p.type() != PieceType::None && p.color() != color) {
       count++;
     }
   }

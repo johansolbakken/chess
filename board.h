@@ -69,15 +69,15 @@ struct Board {
   uint8_t half_move : 8 = 0;
   uint8_t full_move : 8 = 1;
 
-  inline constexpr const Piece& at(const Square& sq) const {
-    return pieces[sq.rank*8+sq.file];
+  inline constexpr const Piece& at(uint8_t rank, uint8_t file) const {
+    return pieces[rank*8+file];
   }
 
   inline constexpr Piece& at(const Square& sq) {
     return pieces[sq.rank*8+sq.file];
   }
 
-  inline bool is_empty(const Square& sq) const {
-    return at(sq).type()== PieceType::None;
+  inline bool is_empty(uint8_t rank, uint8_t file) const {
+    return at(rank, file).type()== PieceType::None;
   }
 };
