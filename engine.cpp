@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "util.h"
+#include "horse.h"
 
 Engine::Move Engine::best_move(const Board &board, int depth) {
   Move best_move = {};
@@ -99,17 +100,18 @@ double Engine::evaluate(const Board &board) {
   double score = 0.0;
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
-      if (board.is_empty(rank, file)) {
+      const auto& p = board.at(rank, file);
+
+      if (p.type() == PieceType::None) {
         continue;
       }
 
-      double piece_value = base_value[board.at(rank, file)._type];
+      double piece_value = base_value[p._type];
 
-      switch (board.at(rank, file).type()) {
+      switch (p.type()) {
       case PieceType::Pawn:
-        piece_value += count_pawn_attacking(board, {rank, file},
-                                            board.at(rank, file).color());
-        if (board.at(rank, file).color() == Color::White) {
+        piece_value += count_pawn_attacking(board, {rank, file}, p.color());
+        if (p.color() == Color::White) {
           piece_value += pawn_table[rank][file];
         } else {
           piece_value += pawn_table[7-rank][file];
@@ -117,15 +119,14 @@ double Engine::evaluate(const Board &board) {
         break;
       case PieceType::Knight:
         piece_value += knight_table[rank][file];
-        piece_value += count_knight_attacking(board, {rank, file},
-                                              board.at(rank, file).color());
+        piece_value += count_knight_attacking(board, {rank, file}, p.color());
         break;
       default:
         break;
       }
 
       // Subtract enemy pieces
-      if (board.at(rank, file)._color != board.turn) {
+      if (p._color != board.turn) {
         piece_value *= -1.0;
       }
 
@@ -233,24 +234,8 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
 
 void Engine::propose_knight_moves(const Board &board, std::vector<Move> &moves,
                                   const Square &from) {
-  static constexpr std::array<std::pair<int, int>, 8> Ls = {{
-      { 2,  1}, { 2, -1}, { 1, -2}, { 1,  2},
-      {-1, -2}, {-1,  2}, {-2,  1}, {-2, -1}
-  }};
-
-  for (const auto &l : Ls) {
-    int rank = from.rank + l.first;
-    int file = from.file + l.second;
-
-    if (rank > 7 || rank < 0 || file > 7 || file < 0) {
-      continue;
-    }
-
-    Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
-
-    if (legal_move(board, from, move)) {
-      moves.push_back({from, move});
-    }
+  for (const auto &[rank, file] : KnightMoveTable::get(from.rank, from.file)) {
+    moves.push_back({from, {rank, file}});
   }
 }
 
@@ -463,23 +448,10 @@ size_t Engine::count_pawn_attacking(const Board &board, const Square &square,
 }
 
 size_t Engine::count_knight_attacking(const Board& board, const Square& square, Color color) {
-  static constexpr std::array<std::pair<int, int>, 8> Ls = {{
-      { 2,  1}, { 2, -1}, { 1, -2}, { 1,  2},
-      {-1, -2}, {-1,  2}, {-2,  1}, {-2, -1}
-  }};
-
   size_t count = 0;
 
-  for (const auto &l : Ls) {
-    int rank = square.rank + l.first;
-    int file = square.file + l.second;
-
-    if (!util::within_bounds(rank, file)) {
-      continue;
-    }
-
-    Square move = {rank, file};
-    const auto& p = board.at(move.rank, move.file);
+  for (const auto& [rank, file] : KnightMoveTable::get(square.rank, square.file)) {
+    const auto& p = board.at(rank, file);
     if (p.type() != PieceType::None && p.color() != color) {
       count++;
     }
