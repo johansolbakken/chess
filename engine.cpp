@@ -38,7 +38,7 @@ Engine::Move Engine::best_move(const Board &board, int depth) {
 
 
 double Engine::alpha_beta(const Board& board, int depth, bool white, double alpha, double beta) {
-  if (depth == 0) {
+  if (depth == 0 || board.game_over) {
     return evaluate(board);
   }
 
@@ -84,6 +84,18 @@ double Engine::alpha_beta(const Board& board, int depth, bool white, double alph
 }
 
 double Engine::evaluate(const Board &board) {
+  if (board.game_over) {
+    switch (board.result) {
+      case Result::WhiteWins:
+        return 1E10;
+      case Result::BlackWins:
+        return -1E10;
+      case Result::Stalemate:
+      case Result::Draw:
+        return 0;
+    }
+  }
+
   static constexpr std::array<double, 7> base_value = {/* None   */ 0.0,
                                                        /* King   */ 1000.0,
                                                        /* Queen  */ 9.0,
@@ -395,6 +407,14 @@ Board Engine::make_move(const Board &board, const Move &move) {
   b.pieces[move.from.rank*8+move.from.file]._type = static_cast<uint8_t>(PieceType::None);
   b.turn = !b.turn;
   calculate_occupy(b);
+  if (checkmate(b)) {
+    b.game_over = true;
+    if (static_cast<Color>(board.turn) == Color::White) {
+      b.result = Result::BlackWins;
+    } else {
+      b.result = Result::WhiteWins;
+    }
+  }
   return b;
 }
 
@@ -572,4 +592,59 @@ void Engine::bishop_occupy(Board& board, int rank, int file, bool white) {
       break;
     }
   }
+}
+
+bool Engine::checkmate(const Board &board) {
+  for (int rank = 0; rank < 8; rank++) {
+    for (int file = 0; file < 8; file++) {
+      const auto& piece = board.pieces[rank*8+file];
+      if (piece.type() != PieceType::King) {
+        continue;
+      }
+
+      bool white_controls_square =
+          board.white_control & (1ULL << (rank * 8 + file));
+      bool black_controls_square =
+          board.black_control & (1ULL << (rank * 8 + file));
+      bool white = piece.color() == Color::White;
+
+      if (white && black_controls_square || !white && white_controls_square) {
+        // Check
+        bool any_escape = false;
+        for (int dy = -1; dy <= 1; dy++) {
+          for (int dx = -1; dx <= 1; dx++) {
+            if (dy == 0 && dx == 0) {
+              continue;
+            }
+
+            int o_rank = rank + dy;
+            int o_file = file + dx;
+            if (!util::within_bounds(o_rank, o_file)) {
+              continue;
+            }
+
+            bool o_black_controls_square =
+                board.black_control & (1ULL << (o_rank * 8 + o_file));
+            bool o_white_controls_square =
+                board.white_control & (1ULL << (o_rank * 8 + o_file));
+            bool empty =
+                board.pieces[o_rank * 8 + o_file].type() == PieceType::None;
+            if ((white && !o_black_controls_square) ||
+                (!white && !o_white_controls_square) && empty) {
+              any_escape = true;
+              break;
+            }
+          }
+          if (any_escape) {
+            break;
+          }
+        }
+
+        if (!any_escape && board.turn == piece._color) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }

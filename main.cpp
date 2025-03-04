@@ -13,11 +13,24 @@ int main(int argc, char *argv[]) {
 
     Engine engine;
     engine.calculate_occupy(board);
-    for (int i = 0; i < 10; i++) {
-      Engine::Move move = engine.best_move(board, 5);
+    for (int i = 0; i < 50 && !board.game_over; i++) {
+      Engine::Move move = engine.best_move(board, 7);
       std::println("Best move: {} -> {}", to_string(move.from),
                    to_string(move.to));
       board = engine.make_move(board, move);
+    }
+
+    if (board.game_over) {
+      switch (board.result) {
+      case Result::WhiteWins:
+        std::println("White wins!!");
+      case Result::BlackWins:
+        std::println("Black wins!!");
+      case Result::Draw:
+        std::println("Draw o.o");
+      case Result::Stalemate:
+        std::println("Stalemate ::");
+      }
     }
 
     return 0;

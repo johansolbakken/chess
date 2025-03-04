@@ -53,7 +53,16 @@ inline std::string to_string(const Square &square) {
     static_cast<char>(square.rank + '1'));
 }
 
+enum class Result {
+  WhiteWins,
+  BlackWins,
+  Stalemate,
+  Draw,
+};
+
 struct Board {
+  bool game_over = false;
+  Result result = Result::Draw;
   std::array<Piece,64> pieces = {};
 
   uint8_t turn : 1 = 0;
