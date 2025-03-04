@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util.h"
 #include <array>
 #include <cstdint>
 #include <string>
@@ -68,4 +69,18 @@ struct Board {
 
   uint8_t half_move : 8 = 0;
   uint8_t full_move : 8 = 1;
+
+  uint64_t white_control = 0;
+  uint64_t black_control = 0;
+
+  inline void occupy(int rank, int file, bool white) {
+    if (util::within_bounds(rank, file)) {
+      uint64_t mask = 1ULL << (rank * 8 + file);
+      if (white) {
+        white_control |= mask;
+      } else {
+        black_control |= mask;
+      }
+    }
+  }
 };

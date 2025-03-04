@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
     Board board = parser.parse_fen(util::read_file(argv[1]));
 
     Engine engine;
+    engine.calculate_occupy(board);
     for (int i = 0; i < 10; i++) {
       Engine::Move move = engine.best_move(board, 5);
       std::println("Best move: {} -> {}", to_string(move.from),

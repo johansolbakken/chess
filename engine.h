@@ -23,8 +23,9 @@ public:
     void propose_bishop_moves(const Board& board, std::vector<Move>& moves, const Square& from);
     void propose_queen_moves(const Board& board, std::vector<Move>& moves, const Square& from);
 
-    inline size_t count_pawn_attacking(const Board& board, const Square& square, Color color);
-    inline size_t count_knight_attacking(const Board& board, const Square& square, Color color);
-
     Board make_move(const Board& board, const Move& move);
+
+    void calculate_occupy(Board& board);
+    void rook_occupy(Board& board, int rank, int file, bool white);
+    void bishop_occupy(Board& board, int rank, int file, bool white);
 };

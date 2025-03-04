@@ -3,6 +3,7 @@
 #include <limits>
 #include <print>
 #include <vector>
+#include <bit>
 
 #include "board.h"
 #include "util.h"
@@ -113,32 +114,21 @@ double Engine::evaluate(const Board &board) {
   };
 
   double score = 0.0;
+
+  score += std::popcount(board.white_control);
+  score -= std::popcount(board.black_control);
+
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
       const auto& p = board.pieces[rank*8 + file];
+      bool white = p.color() == Color::White;
+      PieceType type = p.type();
 
-      if (p.type() == PieceType::None) {
+      if (type == PieceType::None) {
         continue;
       }
 
       double piece_value = base_value[p._type];
-
-      switch (p.type()) {
-      case PieceType::Pawn:
-        piece_value += count_pawn_attacking(board, {rank, file}, p.color());
-        if (p.color() == Color::White) {
-          piece_value += pawn_table[rank][file];
-        } else {
-          piece_value += pawn_table[7-rank][file];
-        }
-        break;
-      case PieceType::Knight:
-        piece_value += knight_table[rank][file];
-        piece_value += count_knight_attacking(board, {rank, file}, p.color());
-        break;
-      default:
-        break;
-      }
 
       // Subtract enemy pieces
       if (p._color != board.turn) {
@@ -399,49 +389,187 @@ void Engine::propose_queen_moves(const Board &board, std::vector<Move> &moves,
   propose_rook_moves(board, moves, from);
 }
 
-size_t Engine::count_pawn_attacking(const Board &board, const Square &square, Color color) {
-    size_t count = 0;
-    int direction = (color == Color::White) ? +1 : -1;
-
-    // Potential attack rank
-    int attackRank = static_cast<int>(square.rank) + direction;
-
-    // Check if the new rank is on the board
-    if (attackRank >= 0 && attackRank < 8) {
-        // Check the two possible files for pawn attacks: file - 1 and file + 1
-        for (int fileOffset : {-1, +1}) {
-            int attackFile = static_cast<int>(square.file) + fileOffset;
-            if (attackFile >= 0 && attackFile < 8) {
-                // Direct indexing to avoid repeated calls to board.at() / is_empty()
-                const Piece occupant = board.pieces[attackRank * 8 + attackFile];
-                if (occupant.type() != PieceType::None && occupant.color() != color) {
-                    count++;
-                }
-            }
-        }
-    }
-
-    return count;
-}
-
-
-size_t Engine::count_knight_attacking(const Board& board, const Square& square, Color color) {
-  size_t count = 0;
-
-  for (const auto& [rank, file] : KnightMoveTable::get(square.rank, square.file)) {
-    const auto& p = board.pieces[rank*8+file];
-    if (p.type() != PieceType::None && p.color() != color) {
-      count++;
-    }
-  }
-
-  return count;
-}
-
 Board Engine::make_move(const Board &board, const Move &move) {
   Board b = board;
   b.pieces[move.to.rank*8+move.to.file] = b.pieces[move.from.rank*8+move.from.file];
   b.pieces[move.from.rank*8+move.from.file]._type = static_cast<uint8_t>(PieceType::None);
   b.turn = !b.turn;
+  calculate_occupy(b);
   return b;
+}
+
+void Engine::calculate_occupy(Board& board) {
+  board.white_control = 0;
+  board.black_control = 0;
+
+  for (int rank = 0; rank < 8; rank++) {
+    for (int file = 0; file < 8; file++) {
+      const auto& piece = board.pieces[rank*8+file];
+      bool white = piece.color() == Color::White;
+
+      switch (piece.type()) {
+      case PieceType::Pawn:
+        if (white) {
+          board.occupy(rank+1, file+1, /* white */true);
+          board.occupy(rank+1, file-1, /* white */true);
+        } else {
+          board.occupy(rank-1, file+1, /* white */false);
+          board.occupy(rank-1, file-1, /* white */false);
+        }
+        break;
+      case PieceType::Knight:
+        for (const auto& [k_rank, k_file] : KnightMoveTable::get(rank, file)) {
+          board.occupy(k_rank, k_file, white);
+        }
+        break;
+      case PieceType::Rook:
+        rook_occupy(board, rank, file, white);
+        break;
+      case PieceType::King:
+        for (int dy = -1; dy <= 1; dy++) {
+          for (int dx = -1; dx <= 1; dx++) {
+            if (dx == 0 && dy == 0) {
+              continue;
+            }
+
+            board.occupy(rank+dy, file+dx, white);
+          }
+        }
+        break;
+      case PieceType::Bishop:
+        bishop_occupy(board, rank, file, white);
+        break;
+      case PieceType::Queen:
+        rook_occupy(board, rank, file, white);
+        bishop_occupy(board, rank, file, white);
+        break;
+      default:
+        break;
+      }
+    }
+  }
+}
+
+void Engine::rook_occupy(Board& board, int rank, int file, bool white) {
+  // occupy leftward
+  for (int left = 1; left < 7; left++) {
+    int p_rank = rank;
+    int p_file = file - left;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+
+  // occupy rightward
+  for (int right = 1; right < 7; right++) {
+    int p_rank = rank;
+    int p_file = file + right;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+
+  // occupy up
+  for (int up = 1; up < 7; up++) {
+    int p_rank = rank + up;
+    int p_file = file;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+
+  // occupy up
+  for (int down = 1; down < 7; down++) {
+    int p_rank = rank - down;
+    int p_file = file;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+}
+
+void Engine::bishop_occupy(Board& board, int rank, int file, bool white) {
+  // occupy leftward
+  for (int up_left = 1; up_left < 7; up_left++) {
+    int p_rank = rank + up_left;
+    int p_file = file - up_left;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+
+  // occupy rightward
+  for (int up_right = 1; up_right < 7; up_right++) {
+    int p_rank = rank + up_right;
+    int p_file = file + up_right;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+
+  // occupy up
+  for (int down_left = 1; down_left < 7; down_left++) {
+    int p_rank = rank - down_left;
+    int p_file = file - down_left;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
+
+  // occupy up
+  for (int down_right = 1; down_right < 7; down_right++) {
+    int p_rank = rank - down_right;
+    int p_file = file + down_right;
+    if (!util::within_bounds(p_rank, p_file)) {
+      continue;
+    }
+
+    const auto &p = board.pieces[p_rank * 8 + p_file];
+    board.occupy(p_rank, p_file, white);
+    if (p.type() != PieceType::None) {
+      break;
+    }
+  }
 }
