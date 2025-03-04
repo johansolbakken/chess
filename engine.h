@@ -11,7 +11,7 @@ public:
 
     Move best_move(const Board& board, int depth);
 
-    double minimax(const Board& board, int depth, bool white);
+    double alpha_beta(const Board& board, int depth, bool white, double alpha, double beta);
 
     double evaluate(const Board& board);
 

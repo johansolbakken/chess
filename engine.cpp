@@ -19,7 +19,12 @@ Engine::Move Engine::best_move(const Board &board, int depth) {
   for (const auto& m : moves) {
       Board b = make_move(board, m);
 
-      double score = minimax(b, depth, static_cast<Color>(board.turn) == Color::White);
+      double score = alpha_beta(
+          /* board */ b,
+          /* depth */ depth,
+          /* white */ static_cast<Color>(board.turn) == Color::White,
+          /* alpha */ -std::numeric_limits<double>::infinity(),
+          /* beta */ std::numeric_limits<double>::infinity());
       if (score > best_score) {
         best_score = score;
         best_move.to = m.to;
@@ -31,7 +36,7 @@ Engine::Move Engine::best_move(const Board &board, int depth) {
 }
 
 
-double Engine::minimax(const Board& board, int depth, bool white) {
+double Engine::alpha_beta(const Board& board, int depth, bool white, double alpha, double beta) {
   if (depth == 0) {
     return evaluate(board);
   }
@@ -49,8 +54,13 @@ double Engine::minimax(const Board& board, int depth, bool white) {
 
     for (const auto &m : moves) {
       Board b = make_move(board, m);
-      double score = minimax(b, depth-1, false);
+      double score = alpha_beta(b, depth-1, false, alpha, beta);
       best_score = std::max(best_score, score);
+      alpha = std::max(alpha, best_score);
+
+      if (beta <= alpha) {
+        break;
+      }
     }
 
     return best_score;
@@ -59,8 +69,12 @@ double Engine::minimax(const Board& board, int depth, bool white) {
 
     for (const auto &m : moves) {
       Board b = make_move(board, m);
-      double score = minimax(b, depth-1, true);
+      double score = alpha_beta(b, depth-1, true, alpha, beta);
       best_score = std::min(best_score, score);
+      beta = std::min(beta, best_score);
+      if (beta <= alpha) {
+        break;
+      }
     }
 
     return best_score;
