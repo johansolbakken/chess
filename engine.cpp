@@ -98,6 +98,7 @@ double Engine::evaluate(const Board &board) {
   double score = 0.0;
 
   score += evaluate_material_count(board);
+  score += evaluate_piece_tables(board);
 
   return score;
 }
@@ -119,6 +120,61 @@ double Engine::evaluate_material_count(const Board& board) {
   score -= std::popcount(board.black_rooks)   * 5.0;
   score -= std::popcount(board.black_queens)  * 9.0;
   score -= std::popcount(board.black_kings)   * 1E4;
+
+  return score;
+}
+
+
+double Engine::evaluate_piece_tables(const Board& board) {
+  double score = 0.0;
+
+  // Piece table scores for pawns
+  {
+    static const int pawn_pst[64] = { 0, 0, 0, 0, 0, 0, 0, 0,
+                                      5, 5, 5, 5, 5, 5, 5, 5,
+                                      1, 1, 2, 3, 3, 2, 1, 1,
+                                      0, 0, 0, 2, 2, 0, 0, 0,
+                                      0, 0, 0, 2, 2, 0, 0, 0,
+                                      1, 1, 1, -1, -1, 1, 1, 1,
+                                      5, 5, 5, -5, -5, 5, 5, 5,
+                                      0, 0, 0, 0, 0, 0, 0, 0};
+
+    for (int rank = 0; rank < 8; rank++) {
+      for (int file = 0; file < 8; file++) {
+        if (board.white_pawns & (1ULL << (rank * 8 + file))) {
+          score += pawn_pst[(7-rank) * 8 + file];
+        }
+        if (board.black_pawns & (1ULL << (rank * 8 + file))) {
+          score += pawn_pst[rank * 8 + file];
+        }
+      }
+    }
+  }
+
+  // Piece table scores for pawns
+  {
+    static const int knight_pst[64] = { -1, -1, -1, -1, -1, -1, -1, -1,
+                                      -1, 0, 0, 0, 0, 0, 0, -1,
+                                      -1, 0, 1, 1, 1, 1, 0, -1,
+                                      -1, 0, 1, 3, 3, 1, 0, -1,
+                                      -1, 0, 1, 3, 3, 1, 0, -1,
+                                      -1, 0, 1, 1, 1, 1, 0, -1,
+                                      -1, 0, 0, 0, 0, 0, 0, -1,
+                                      -1, -1, -1, -1, -1, -1, -1, -1};
+
+    for (int rank = 0; rank < 8; rank++) {
+      for (int file = 0; file < 8; file++) {
+        if (board.white_knights & (1ULL << (rank * 8 + file))) {
+          score += knight_pst[(7-rank) * 8 + file];
+        }
+        if (board.black_knights & (1ULL << (rank * 8 + file))) {
+          score += knight_pst[rank * 8 + file];
+        }
+      }
+    }
+  }
+
+
 
   return score;
 }

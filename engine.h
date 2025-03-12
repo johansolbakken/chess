@@ -15,6 +15,7 @@ public:
 
     double evaluate(const Board& board);
     double evaluate_material_count(const Board& board);
+    double evaluate_piece_tables(const Board& board);
 
     void generate_moves(const Board& board, std::vector<Move>& moves);
     void propose_pawn_moves(const Board& board, std::vector<Move>& moves, const Square& from);
