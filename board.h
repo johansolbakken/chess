@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <string>
 #include <format>
-#include <cassert>
 
 enum class Color : uint8_t {
   White=0,
@@ -19,7 +18,6 @@ struct Square {
   template <std::integral T, std::integral U>
   Square(T r, U f)
       : rank(static_cast<uint8_t>(r)), file(static_cast<uint8_t>(f)) {
-    assert(util::within_bounds(r, f) && "Square coordinates must be between 0 and 7");
   }
 };
 
