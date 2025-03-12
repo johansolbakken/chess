@@ -101,7 +101,7 @@ bool FENParser::parse_board(Board &board, const std::string &board_desc) {
         board.black_queens |= pos;
         break;
       case 'k':
-        board.black_knights |= pos;
+        board.black_kings |= pos;
         break;
       case 'p':
         board.black_pawns |= pos;
