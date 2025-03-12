@@ -163,7 +163,7 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
     return;
   }
 
-  int8_t dy = white ? 1 : -1;
+  int dy = white ? 1 : -1;
   bool start_square = (white && (from.rank == 1)) || (from.rank == 6);
 
   // Propose attacking moves
