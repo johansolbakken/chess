@@ -180,39 +180,49 @@ double Engine::evaluate_piece_tables(const Board& board) {
 }
 
 void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
+  std::vector<Move> pseudo;
+  pseudo.reserve(128);
+
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
       uint64_t pos = (1ULL << (rank * 8 + file));
 
       if (board.turn == Color::White) {
         if (board.white_pawns & pos) {
-          propose_pawn_moves(board, moves, {rank, file});
+          propose_pawn_moves(board, pseudo, {rank, file});
         } else if (board.white_knights & pos) {
-          propose_knight_moves(board, moves, {rank, file});
+          propose_knight_moves(board, pseudo, {rank, file});
         } else if (board.white_bishops & pos) {
-          propose_bishop_moves(board, moves, {rank, file});
+          propose_bishop_moves(board, pseudo, {rank, file});
         } else if (board.white_rooks & pos) {
-          propose_rook_moves(board, moves, {rank, file});
+          propose_rook_moves(board, pseudo, {rank, file});
         } else if (board.white_queens & pos) {
-          propose_queen_moves(board, moves, {rank, file});
+          propose_queen_moves(board, pseudo, {rank, file});
         } else if (board.white_kings & pos) {
-          propose_king_moves(board, moves, {rank, file});
+          propose_king_moves(board, pseudo, {rank, file});
         }
       } else {
         if (board.black_pawns & pos) {
-          propose_pawn_moves(board, moves, {rank, file});
+          propose_pawn_moves(board, pseudo, {rank, file});
         } else if (board.black_knights & pos) {
-          propose_knight_moves(board, moves, {rank, file});
+          propose_knight_moves(board, pseudo, {rank, file});
         } else if (board.black_bishops & pos) {
-          propose_bishop_moves(board, moves, {rank, file});
+          propose_bishop_moves(board, pseudo, {rank, file});
         } else if (board.black_rooks & pos) {
-          propose_rook_moves(board, moves, {rank, file});
+          propose_rook_moves(board, pseudo, {rank, file});
         } else if (board.black_queens & pos) {
-          propose_queen_moves(board, moves, {rank, file});
+          propose_queen_moves(board, pseudo, {rank, file});
         } else if (board.black_kings & pos) {
-          propose_king_moves(board, moves, {rank, file});
+          propose_king_moves(board, pseudo, {rank, file});
         }
       }
+    }
+  }
+
+  for (auto& move : moves) {
+    Board next_position = make_move(board, move);
+    if (!next_position.is_check) {
+      moves.push_back(move);
     }
   }
 }
