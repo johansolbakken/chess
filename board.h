@@ -36,6 +36,7 @@ enum class Result {
 
 struct Board {
   bool game_over = false;
+  bool is_check = false;
   Result result = Result::Draw;
 
   uint64_t white_pawns = 0;

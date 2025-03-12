@@ -520,6 +520,7 @@ Board Engine::make_move(const Board &board, const Move &move) {
   }
 
   b.aggregate();
+  b.is_check = in_check(b, b.turn);
 
   if (is_checkmate(b)) {
     b.game_over = true;
@@ -534,7 +535,7 @@ Board Engine::make_move(const Board &board, const Move &move) {
 
 
 bool Engine::is_checkmate(const Board &board) {
-  if (!in_check(board, board.turn)) {
+  if (!board.is_check) {
     return false;
   }
 
@@ -544,7 +545,7 @@ bool Engine::is_checkmate(const Board &board) {
 }
 
 bool Engine::is_stalemate(const Board &board) {
-  if (in_check(board, board.turn)) {
+  if (board.is_check) {
     return false;
   }
 
