@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     Engine engine;
     for (int i = 0; i < 50 && !board.game_over; i++) {
-      Engine::Move move = engine.best_move(board, 15);
+      Engine::Move move = engine.best_move(board, 7);
       std::println("Best move: {} -> {}", to_string(move.from),
                    to_string(move.to));
       board = engine.make_move(board, move);
