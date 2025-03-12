@@ -102,14 +102,14 @@ double Engine::evaluate(const Board &board) {
   score += std::popcount(board.white_bishops) * 3.0;
   score += std::popcount(board.white_rooks)   * 5.0;
   score += std::popcount(board.white_queens)  * 9.0;
-  score += std::popcount(board.white_kings)   * 1E6;
+  score += std::popcount(board.white_kings)   * 1E4;
 
   score -= std::popcount(board.black_pawns)   * 1.0;
   score -= std::popcount(board.black_knights) * 3.0;
   score -= std::popcount(board.black_bishops) * 3.0;
   score -= std::popcount(board.black_rooks)   * 5.0;
   score -= std::popcount(board.black_queens)  * 9.0;
-  score -= std::popcount(board.black_kings)   * 1E6;
+  score -= std::popcount(board.black_kings)   * 1E4;
 
   return score;
 }
@@ -117,7 +117,7 @@ double Engine::evaluate(const Board &board) {
 void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
   for (uint8_t rank = 0; rank < 8; rank++) {
     for (uint8_t file = 0; file < 8; file++) {
-      size_t pos = (1ULL << (rank * 8 + file));
+      uint64_t pos = (1ULL << (rank * 8 + file));
 
       if (board.turn == Color::White) {
         if (board.white_pawns & pos) {
