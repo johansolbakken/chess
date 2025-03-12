@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     Engine engine;
     for (int i = 0; i < 50 && !board.game_over; i++) {
-      Engine::Move move = engine.best_move(board, 9);
+      Engine::Move move = engine.best_move(board, 7);
       std::println("Best move: {} -> {}", to_string(move.from),
                    to_string(move.to));
       board = engine.make_move(board, move);
@@ -24,12 +24,16 @@ int main(int argc, char *argv[]) {
       switch (board.result) {
       case Result::WhiteWins:
         std::println("White wins!!");
+        break;
       case Result::BlackWins:
         std::println("Black wins!!");
+        break;
       case Result::Draw:
         std::println("Draw o.o");
+        break;
       case Result::Stalemate:
         std::println("Stalemate ::");
+        break;
       }
     }
 

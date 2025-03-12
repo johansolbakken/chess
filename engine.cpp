@@ -521,25 +521,64 @@ Board Engine::make_move(const Board &board, const Move &move) {
 
   b.aggregate();
 
-  if (checkmate(b)) {
+  if (is_checkmate(b)) {
     b.game_over = true;
     b.result = (b.turn == Color::White) ? Result::BlackWins : Result::WhiteWins;
+  } else if (is_stalemate(b)) {
+    b.game_over = true;
+    b.result = Result::Stalemate;
   }
 
   return b;
 }
 
 
-bool Engine::checkmate(const Board &board) {
-  // TODO: Fix this file
-  for (int rank = 0; rank < 8; rank++) {
-    for (int file = 0; file < 8; file++) {
-      uint64_t pos = (1ULL << (rank * 8 + file));
-      if (board.turn == Color::White && (board.white_kings & pos)) {
-        return false;
-      } else if (board.turn == Color::Black && (board.black_kings & pos)) {
-        return false;
-      }
+bool Engine::is_checkmate(const Board &board) {
+  if (!in_check(board, board.turn)) {
+    return false;
+  }
+
+  std::vector<Move> moves;
+  generate_moves(board, moves);
+  return moves.empty();
+}
+
+bool Engine::is_stalemate(const Board &board) {
+  if (in_check(board, board.turn)) {
+    return false;
+  }
+
+  std::vector<Move> moves;
+  generate_moves(board, moves);
+  return moves.empty();
+}
+
+bool Engine::in_check(const Board &board, Color side) {
+  uint64_t king_board =
+      side == Color::White ? board.white_kings : board.black_kings;
+
+  if (king_board == 0) {
+    // There is literally no king
+    return true;
+  }
+
+  int king_square_index = std::countr_zero(king_board);
+  int rank = king_square_index / 8;
+  int file = king_square_index % 8;
+
+  Color old_turn = board.turn;
+
+  Board temp = board;
+  temp.turn = (side == Color::White) ? Color::Black : Color::White;
+
+  std::vector<Move> opponent_moves;
+  generate_moves(temp, opponent_moves);
+
+  uint64_t kingMask = 1ULL << king_square_index;
+  for (auto &m : opponent_moves) {
+    uint64_t moveToMask = 1ULL << (m.to.rank * 8 + m.to.file);
+    if (moveToMask == kingMask) {
+      return true;
     }
   }
 

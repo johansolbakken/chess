@@ -27,5 +27,7 @@ public:
 
     Board make_move(const Board& board, const Move& move);
 
-    bool checkmate(const Board& board);
+    bool is_checkmate(const Board& board);
+    bool is_stalemate(const Board& board);
+    bool in_check(const Board& board, Color side);
 };
