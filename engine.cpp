@@ -218,17 +218,20 @@ void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
 
 void Engine::propose_knight_moves(const Board &board, std::vector<Move> &moves,
                                   const Square &from) {
-  uint64_t fromPos = 1ULL << (from.rank * 8 + from.file);
-  bool white = (board.white_knights & fromPos) != 0;
+  bool white = board.turn == Color::White;
 
   for (auto [r, f] : KnightMoveTable::get(from.rank, from.file)) {
-    uint64_t toPos = 1ULL << (r * 8 + f);
+    uint64_t to_pos = 1ULL << (r * 8 + f);
 
-    // If same color piece is there, can’t move
-    if (white && (board.white_pieces & toPos)) {
+    if (!util::within_bounds(r, f)) {
       continue;
     }
-    if (!white && (board.black_pieces & toPos)) {
+
+    // If same color piece is there, can’t move
+    if (white && (board.white_pieces & to_pos)) {
+      continue;
+    }
+    if (!white && (board.black_pieces & to_pos)) {
       continue;
     }
 
@@ -240,7 +243,7 @@ void Engine::propose_knight_moves(const Board &board, std::vector<Move> &moves,
 void Engine::propose_king_moves(const Board &board, std::vector<Move> &moves,
                                 const Square &from) {
   uint64_t kingPos = 1ULL << (from.rank * 8 + from.file);
-  bool white = (board.white_kings & kingPos) != 0;
+  bool white = board.turn == Color::White;
 
   for (int dy = -1; dy <= 1; dy++) {
     for (int dx = -1; dx <= 1; dx++) {
@@ -284,10 +287,10 @@ void Engine::propose_rook_moves(const Board &board, std::vector<Move> &moves,
       return true;
     }
 
-    Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
+    Square move = {rank, file};
     uint64_t move_pos = (1ULL << (rank * 8 + file));
     uint64_t from_pos = (1ULL << (from.rank * 8 + from.file));
-    bool white = board.white_rooks & from_pos;
+    bool white = board.turn == Color::White;
 
     if (board.occupied_squares & move_pos) {
       if ((white && (board.black_pieces & move_pos)) ||
@@ -351,10 +354,10 @@ void Engine::propose_bishop_moves(const Board &board, std::vector<Move> &moves,
       return true;
     }
 
-    Square move = {static_cast<uint8_t>(rank), static_cast<uint8_t>(file)};
+    Square move = {rank, file};
     uint64_t move_pos = (1ULL << (rank * 8 + file));
     uint64_t from_pos = (1ULL << (from.rank * 8 + from.file));
-    bool white = board.white_bishops & from_pos;
+    bool white = board.turn == Color::White;
 
     if (board.occupied_squares & move_pos) {
       if ((white && (board.black_pieces & move_pos)) ||
