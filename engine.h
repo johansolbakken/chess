@@ -14,6 +14,7 @@ public:
     double alpha_beta(const Board& board, int depth, bool white, double alpha, double beta);
 
     double evaluate(const Board& board);
+    double evaluate_material_count(const Board& board);
 
     void generate_moves(const Board& board, std::vector<Move>& moves);
     void propose_pawn_moves(const Board& board, std::vector<Move>& moves, const Square& from);

@@ -97,6 +97,15 @@ double Engine::evaluate(const Board &board) {
 
   double score = 0.0;
 
+  score += evaluate_material_count(board);
+
+  return score;
+}
+
+
+double Engine::evaluate_material_count(const Board& board) {
+  double score = 0.0;
+
   score += std::popcount(board.white_pawns)   * 1.0;
   score += std::popcount(board.white_knights) * 3.0;
   score += std::popcount(board.white_bishops) * 3.0;
