@@ -155,57 +155,63 @@ void Engine::generate_moves(const Board &board, std::vector<Move> &moves) {
 void Engine::propose_pawn_moves(const Board &board, std::vector<Move> &moves,
                                 const Square &from) {
   uint64_t from_pos = (1ULL << (from.rank * 8 + from.file));
-  bool white = board.white_pawns & from_pos;
-
-  if (white ^ (board.turn == Color::White)) {
-    std::string color = white ? "white" : "black";
-    // std::println(stderr, "[Warning] The {} player tried to propose opposite color pawn move", color);
-    return;
-  }
+  bool white = board.turn == Color::White;
 
   int dy = white ? 1 : -1;
-  bool start_square = (white && (from.rank == 1)) || (from.rank == 6);
+  bool start_square = ((white && (from.rank == 1)) || (!white && (from.rank == 6)));
 
   // Propose attacking moves
   {
     // Attack right
-    if (util::within_bounds(from.rank + dy, from.file + 1)) {
-      Square move = {from.rank + dy, from.file + 1};
-      uint64_t to_pos = (1ULL << (move.rank * 8 + move.file));
-      if (board.occupied_squares & to_pos) {
-        if ((white && !(board.white_pieces & to_pos)) ||
-            (!white && !(board.black_pieces & to_pos))) {
-          moves.push_back({from, move});
+    {
+      int rank = from.rank + dy;
+      int file = from.file + 1;
+      int pos = (1ULL << (rank * 8 + file));
+      if (util::within_bounds(rank, file) && (board.occupied_squares & pos)) {
+        if ((white && !(board.white_pieces & pos)) ||
+            (!white && !(board.black_pieces & pos))) {
+          moves.push_back({from, {rank, file}});
         }
       }
     }
 
     // Attack left
-    if (util::within_bounds(from.rank + dy, from.file - 1)) {
-      Square move = {from.rank + dy, from.file - 1};
-      uint64_t to_pos = (1ULL << (move.rank * 8 + move.file));
-      if (board.occupied_squares & to_pos) {
-        if ((white && !(board.white_pieces & to_pos)) ||
-            (!white && !(board.black_pieces & to_pos))) {
-          moves.push_back({from, move});
+    {
+      int rank = from.rank + dy;
+      int file = from.file - 1;
+      int pos = (1ULL << (rank * 8 + file));
+      if (util::within_bounds(rank, file) && (board.occupied_squares & pos)) {
+        if ((white && !(board.white_pieces & pos)) ||
+            (!white && !(board.black_pieces & pos))) {
+          moves.push_back({from, {rank, file}});
         }
       }
     }
   }
 
-  // Propose moving moves
-  if (start_square) {
-    Square move = {from.rank + 2 * dy, from.file};
-    if (!(board.occupied_squares & (1ULL << ((from.rank + dy)*8+from.file)))
-        && !(board.occupied_squares & (1ULL << (move.rank*8+move.file)))) {
-      moves.push_back({from, move});
-    }
-  }
-
   {
-    Square move = {from.rank + dy, from.file};
-    if (!(board.occupied_squares & (1ULL << (move.rank*8+move.file)))) {
-      moves.push_back({from, move});
+    int rank = from.rank + dy;
+    int file = from.file;
+
+    if (!util::within_bounds(rank, file)) {
+      return;
+    }
+
+    uint64_t pos = (1ULL << (rank * 8 + file));
+
+    if (!(board.occupied_squares & pos)) {
+      moves.push_back({from, {rank, file}});
+    }
+
+    if (!start_square) {
+      return;
+    }
+
+    rank += dy; // if on start pos, move one extra forward for pawn.
+    pos = (1ULL << (rank * 8 + file));
+
+    if (!(board.occupied_squares & pos)) {
+      moves.push_back({from, {rank, file}});
     }
   }
 }
