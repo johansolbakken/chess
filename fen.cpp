@@ -79,89 +79,81 @@ bool FENParser::parse_blocks(const std::string& fen,
     return false;
 }
 
-bool FENParser::parse_board(Board& board, const std::string& board_desc) {
-    std::stringstream ss(board_desc);
-    std::string rank_line;
-    int rank = 7;
-    while (std::getline(ss, rank_line, '/')) {
-        int file = 0;
-        for (int i = 0; i < rank_line.size(); i++) {
-            switch (rank_line[i]) {
-                case 'r':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Rook);
-                    break;
-                case 'n':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Knight);
-                    break;
-                case 'b':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Bishop);
-                    break;
-                case 'q':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Queen);
-                    break;
-                case 'k':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::King);
-                    break;
-                case 'p':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::Black);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Pawn);
-                    break;
+bool FENParser::parse_board(Board &board, const std::string &board_desc) {
+  std::stringstream ss(board_desc);
+  std::string rank_line;
+  int rank = 7;
+  while (std::getline(ss, rank_line, '/')) {
+    int file = 0;
+    for (int i = 0; i < rank_line.size(); i++) {
+      size_t pos = (1ULL << (rank * 8 + file));
+      switch (rank_line[i]) {
+      case 'r':
+        board.black_rooks |= pos;
+        break;
+      case 'n':
+        board.black_knights |= pos;
+        break;
+      case 'b':
+        board.black_bishops |= pos;
+        break;
+      case 'q':
+        board.black_queens |= pos;
+        break;
+      case 'k':
+        board.black_knights |= pos;
+        break;
+      case 'p':
+        board.black_pawns |= pos;
+        break;
 
-                case 'R':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Rook);
-                    break;
-                case 'N':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Knight);
-                    break;
-                case 'B':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Bishop);
-                    break;
-                case 'Q':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Queen);
-                    break;
-                case 'K':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::King);
-                    break;
-                case 'P':
-                    board.pieces[rank * 8 + file]._color = static_cast<uint8_t>(Color::White);
-                    board.pieces[rank * 8 + file]._type = static_cast<uint8_t>(PieceType::Pawn);
-                    break;
+      case 'R':
+        board.white_rooks |= pos;
+        break;
+      case 'N':
+        board.white_knights |= pos;
+        break;
+      case 'B':
+        board.white_bishops |= pos;
+        break;
+      case 'Q':
+        board.white_queens |= pos;
+        break;
+      case 'K':
+        board.white_kings |= pos;
+        break;
+      case 'P':
+        board.white_pawns |= pos;
+        break;
 
-                default:
-                    if (rank_line[i] >= '1' && rank_line[i] <= '8') {
-                        file += static_cast<size_t>(rank_line[i] - '0');
-                        continue;
-                    }
-
-                    std::println(stderr, "Unrecognized piece or number in board rank={} i={} char={}", rank, i, rank_line[i]);
-                    return true;
-
-                    break;
-            }
-
-            file++;
+      default:
+        if (rank_line[i] >= '1' && rank_line[i] <= '8') {
+          file += static_cast<size_t>(rank_line[i] - '0');
+          continue;
         }
-        rank--;
-    }
 
-    return false;
+        std::println(
+            stderr,
+            "Unrecognized piece or number in board rank={} i={} char={}", rank,
+            i, rank_line[i]);
+        return true;
+
+        break;
+      }
+
+      file++;
+    }
+    rank--;
+  }
+
+  return false;
 }
 
 bool FENParser::parse_turn(Board& board, const std::string& turn) {
     if (turn[0] == 'w') {
-        board.turn = static_cast<uint8_t>(Color::White);
+        board.turn = Color::White;
     } else if (turn[0] == 'b') {
-        board.turn = static_cast<uint8_t>(Color::Black);
+        board.turn = Color::Black;
     } else {
         std::println("Expected turn to be either 'w' or 'b'. Was: '{}'", turn);
         return true;
@@ -256,80 +248,80 @@ std::string FENParser::to_fen(const Board& board) {
 }
 
 void FENParser::write_board(std::stringstream& ss, const Board& board) {
-    for (int rank = 7; rank >= 0; rank--) {
-        size_t empty_count = 0;
-        for (size_t file = 0; file < 8; file++) {
-            bool is_empty = board.pieces[rank*8 + file].type() == PieceType::None;
+    // for (int rank = 7; rank >= 0; rank--) {
+    //     size_t empty_count = 0;
+    //     for (size_t file = 0; file < 8; file++) {
+    //         bool is_empty = board.pieces[rank*8 + file].type() == PieceType::None;
 
-            if (is_empty) {
-                empty_count++;
-                continue;
-            }
+    //         if (is_empty) {
+    //             empty_count++;
+    //             continue;
+    //         }
 
-            // not empty
-            if (empty_count > 0) {
-                ss << empty_count;
-                empty_count = 0;
-            }
+    //         // not empty
+    //         if (empty_count > 0) {
+    //             ss << empty_count;
+    //             empty_count = 0;
+    //         }
 
-            PieceType type = board.pieces[rank*8 + file].type();
-            Color color = board.pieces[rank*8 + file].color();
-            switch (type) {
-            case PieceType::Rook:
-              if (color == Color::White) {
-                ss << 'R';
-              } else {
-                ss << 'r';
-              }
-              break;
-            case PieceType::Queen:
-              if (color == Color::White) {
-                ss << 'Q';
-              } else {
-                ss << 'q';
-              }
-              break;
-            case PieceType::King:
-              if (color == Color::White) {
-                ss << 'K';
-              } else {
-                ss << 'k';
-              }
-              break;
-            case PieceType::Bishop:
-              if (color == Color::White) {
-                ss << 'B';
-              } else {
-                ss << 'b';
-              }
-              break;
-            case PieceType::Knight:
-              if (color == Color::White) {
-                ss << 'N';
-              } else {
-                ss << 'n';
-              }
-              break;
-            case PieceType::Pawn:
-              if (color == Color::White) {
-                ss << 'P';
-              } else {
-                ss << 'p';
-              }
-              break;
-            default:
-                break;
-            }
-        }
+    //         PieceType type = board.pieces[rank*8 + file].type();
+    //         Color color = board.pieces[rank*8 + file].color();
+    //         switch (type) {
+    //         case PieceType::Rook:
+    //           if (color == Color::White) {
+    //             ss << 'R';
+    //           } else {
+    //             ss << 'r';
+    //           }
+    //           break;
+    //         case PieceType::Queen:
+    //           if (color == Color::White) {
+    //             ss << 'Q';
+    //           } else {
+    //             ss << 'q';
+    //           }
+    //           break;
+    //         case PieceType::King:
+    //           if (color == Color::White) {
+    //             ss << 'K';
+    //           } else {
+    //             ss << 'k';
+    //           }
+    //           break;
+    //         case PieceType::Bishop:
+    //           if (color == Color::White) {
+    //             ss << 'B';
+    //           } else {
+    //             ss << 'b';
+    //           }
+    //           break;
+    //         case PieceType::Knight:
+    //           if (color == Color::White) {
+    //             ss << 'N';
+    //           } else {
+    //             ss << 'n';
+    //           }
+    //           break;
+    //         case PieceType::Pawn:
+    //           if (color == Color::White) {
+    //             ss << 'P';
+    //           } else {
+    //             ss << 'p';
+    //           }
+    //           break;
+    //         default:
+    //             break;
+    //         }
+    //     }
 
-        if (empty_count > 0) {
-          ss << empty_count;
-        }
+    //     if (empty_count > 0) {
+    //       ss << empty_count;
+    //     }
 
-        if (rank > 0) {
-            ss << '/';
-        }
-    }
+    //     if (rank > 0) {
+    //         ss << '/';
+    //     }
+    // }
 }
 
 void FENParser::write_turn(std::stringstream& ss, const Board& board) {

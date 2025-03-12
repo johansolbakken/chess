@@ -1,7 +1,5 @@
 #pragma once
 
-#include "util.h"
-#include <array>
 #include <cstdint>
 #include <string>
 #include <format>
@@ -10,28 +8,6 @@
 enum class Color : uint8_t {
   White=0,
   Black=1
-};
-
-enum class PieceType : uint8_t {
-  None=0,
-  King=1,
-  Queen=2,
-  Rook=3,
-  Bishop=4,
-  Knight=5,
-  Pawn=6
-};
-
-inline int compare(PieceType a, PieceType b) {
-  return static_cast<int>(a) - static_cast<int>(b);
-}
-
-struct Piece {
-  uint8_t _type : 3;
-  uint8_t _color : 1;
-
-  inline constexpr Color color() const { return static_cast<Color>(_color); }
-  inline constexpr PieceType type() const { return static_cast<PieceType>(_type); }
 };
 
 struct Square {
@@ -63,33 +39,51 @@ enum class Result {
 struct Board {
   bool game_over = false;
   Result result = Result::Draw;
-  std::array<Piece,64> pieces = {};
 
-  uint8_t turn : 1 = 0;
+  uint64_t white_pawns = 0;
+  uint64_t white_queens = 0;
+  uint64_t white_kings = 0;
+  uint64_t white_knights = 0;
+  uint64_t white_bishops = 0;
+  uint64_t white_rooks = 0;
 
-  uint8_t castle_white_kingside  : 1 = 0;
-  uint8_t castle_white_queenside : 1 = 0;
-  uint8_t castle_black_kingside  : 1 = 0;
-  uint8_t castle_black_queenside : 1 = 0;
+  uint64_t black_pawns = 0;
+  uint64_t black_queens = 0;
+  uint64_t black_kings = 0;
+  uint64_t black_knights = 0;
+  uint64_t black_bishops = 0;
+  uint64_t black_rooks = 0;
 
-  uint8_t has_en_passant  : 1 = 0;
-  uint8_t en_passant_file : 3 = 0;
-  uint8_t en_passant_rank : 3 = 0;
+  Color turn = Color::White;
 
-  uint8_t half_move : 8 = 0;
-  uint8_t full_move : 8 = 1;
+  bool castle_white_kingside = false;
+  bool castle_white_queenside = false;
+  bool castle_black_kingside = false;
+  bool castle_black_queenside = false;
 
-  uint64_t white_control = 0;
-  uint64_t black_control = 0;
+  bool has_en_passant = false;
+  uint8_t en_passant_file = 0;
+  uint8_t en_passant_rank = 0;
 
-  inline void occupy(int rank, int file, bool white) {
-    if (util::within_bounds(rank, file)) {
-      uint64_t mask = 1ULL << (rank * 8 + file);
-      if (white) {
-        white_control |= mask;
-      } else {
-        black_control |= mask;
-      }
-    }
+  uint8_t half_move = 0;
+  uint8_t full_move = 1;
+
+  uint64_t white_pieces = 0;
+  uint64_t black_pieces = 0;
+  uint64_t occupied_squares = 0;
+  uint64_t empty_squares = 0;
+
+  void aggregate() {
+    white_pieces = 0;
+    black_pieces = 0;
+    occupied_squares = 0;
+    empty_squares = 0;
+
+    white_pieces = white_pawns | white_knights | white_bishops | white_rooks |
+                   white_queens | white_kings;
+    black_pieces = black_pawns | black_knights | black_bishops | black_rooks |
+                   black_queens | black_kings;
+    occupied_squares = white_pieces | black_pieces;
+    empty_squares = ~white_pieces & ~black_pieces;
   }
 };

@@ -25,9 +25,5 @@ public:
 
     Board make_move(const Board& board, const Move& move);
 
-    void calculate_occupy(Board& board);
-    void rook_occupy(Board& board, int rank, int file, bool white);
-    void bishop_occupy(Board& board, int rank, int file, bool white);
-
     bool checkmate(const Board& board);
 };
